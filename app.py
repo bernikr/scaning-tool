@@ -58,8 +58,8 @@ async def start_scan(source: Literal["flatbed", "adf-left", "adf"], outfile: Pat
     with TemporaryDirectory(ignore_cleanup_errors=True) as directory:
         d = Path(directory)
         stdout, stderr = await run(
-            f"cd {d.absolute()}; "
-            f"scanimage --format=tiff --source='{sources[source]}' --batch='scan.page-%03d.tiff'; "
+            f"cd {d.absolute()} && "
+            f"scanimage --format=tiff --source='{sources[source]}' --batch='scan.page-%03d.tiff' -x 210 -y 297 && "
             "convert *.tiff scan.pdf",
         )
         if stdout:
