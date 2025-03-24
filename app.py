@@ -5,7 +5,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
-from tempfile import NamedTemporaryFile
+from tempfile import TemporaryDirectory
 from typing import Any, Literal
 
 import uvicorn
@@ -55,16 +55,20 @@ async def start_scan(source: Literal["flatbed", "adf-left", "adf"], outfile: Pat
     }
     logger.info("starting scan from source %s", source)
     outfile.parent.mkdir(parents=True, exist_ok=True)
-    with NamedTemporaryFile(delete_on_close=False) as file:
-        file.close()
-        _, stderr = await run(
-            f"scanimage --format=pdf --source='{sources[source]}' > {file.name}",
+    with TemporaryDirectory(ignore_cleanup_errors=True) as directory:
+        d = Path(directory)
+        stdout, stderr = await run(
+            f"cd {d.absolute()}; "
+            f"scanimage --format=tiff --source='{sources[source]}' --batch='scan.page-%03d.tiff'; "
+            "convert *.tiff scan.pdf",
         )
+        if stdout:
+            logger.info("stdout:\n%s", stdout)
         if stderr:
-            logger.info("scan output")
-            logger.info(stderr)
+            logger.info("stderr:\n%s", stderr)
+        logger.info(", ".join(f.name for f in d.glob("*")))
         logger.info("finished scan")
-        outfile.write_bytes(Path(file.name).read_bytes())
+        outfile.write_bytes((d / "scan.pdf").read_bytes())
         logger.info("copied scan to %s", outfile)
 
 
