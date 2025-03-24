@@ -5,6 +5,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import Any, Literal
 
 import uvicorn
@@ -63,14 +64,17 @@ async def scan(
         "adf-left": "Automatic Document Feeder(left aligned)",
         "adf": "Automatic Document Feeder(centrally aligned)",
     }
-    logger.info("starting scan %s from source %s", filename, source)
+    logger.info("starting scan from source %s", source)
     outfile = Path("/scans") / filename
     outfile.parent.mkdir(parents=True, exist_ok=True)
-    logger.info("outfile: %s", outfile)
-    _, stderr = await run(
-        f"scanimage --format=pdf --source='{sources[source]}' > {outfile.absolute()}",
-    )
-    logger.info("finished scan")
+    with NamedTemporaryFile(delete_on_close=False) as file:
+        file.close()
+        _, stderr = await run(
+            f"scanimage --format=pdf --source='{sources[source]}' > {file.name}",
+        )
+        logger.info("finished scan")
+        outfile.write_bytes(Path(file.name).read_bytes())
+        logger.info("copied scan to %s", outfile)
     return {"file": filename, "source": source, "stderr": stderr}
 
 
