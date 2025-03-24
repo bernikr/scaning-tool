@@ -5,7 +5,6 @@ WORKDIR /app
 RUN apt update; apt install -y sane sane-utils
 RUN wget https://download.brother.com/welcome/dlf105200/brscan4-0.4.11-1.amd64.deb
 RUN dpkg -i --force-all brscan4-0.4.11-1.amd64.deb
-RUN brsaneconfig4 -a name=scan model=MFC-L2710DW ip=172.23.0.212
 
 # Enable bytecode compilation
 ENV UV_COMPILE_BYTECODE=1
@@ -32,4 +31,4 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Reset the entrypoint, don't invoke `uv`
 ENTRYPOINT []
 
-CMD ["python", "app.py"]
+CMD ["fastapi", "run", "app.py", "--proxy-headers", "--port", "80"]
