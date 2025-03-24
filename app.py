@@ -9,7 +9,7 @@ from tempfile import NamedTemporaryFile
 from typing import Any, Literal
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import BackgroundTasks, FastAPI
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -47,35 +47,43 @@ async def root() -> dict[str, str]:
     return {"message": "Hello World"}
 
 
-@app.get("/scan")
-async def scan(
-    *,
-    source: Literal["flatbed", "adf-left", "adf"] = "adf",
-    double_sided: bool = False,
-    tags: list[str] | None = None,
-) -> dict[str, str]:
-    filename = f"SCAN_{datetime.now(tz=UTC).strftime('%Y-%m-%d_%H-%M-%S')}.pdf"
-    if double_sided:
-        filename = "double-sided/" + filename
-    if tags:
-        filename = f"{'/'.join(tags)}/{filename}"
+async def start_scan(source: Literal["flatbed", "adf-left", "adf"], outfile: Path) -> None:
     sources = {
         "flatbed": "FlatBed",
         "adf-left": "Automatic Document Feeder(left aligned)",
         "adf": "Automatic Document Feeder(centrally aligned)",
     }
     logger.info("starting scan from source %s", source)
-    outfile = Path("/scans") / filename
     outfile.parent.mkdir(parents=True, exist_ok=True)
     with NamedTemporaryFile(delete_on_close=False) as file:
         file.close()
         _, stderr = await run(
             f"scanimage --format=pdf --source='{sources[source]}' > {file.name}",
         )
+        if stderr:
+            logger.info("scan output")
+            logger.info(stderr)
         logger.info("finished scan")
         outfile.write_bytes(Path(file.name).read_bytes())
         logger.info("copied scan to %s", outfile)
-    return {"file": filename, "source": source, "stderr": stderr}
+
+
+@app.get("/scan")
+async def scan(
+    *,
+    source: Literal["flatbed", "adf-left", "adf"] = "adf",
+    double_sided: bool = False,
+    tags: list[str] | None = None,
+    background_tasks: BackgroundTasks,
+) -> dict[str, str]:
+    filename = f"SCAN_{datetime.now(tz=UTC).strftime('%Y-%m-%d_%H-%M-%S')}.pdf"
+    if double_sided:
+        filename = "double-sided/" + filename
+    if tags:
+        filename = f"{'/'.join(tags)}/{filename}"
+    outfile = Path("/scans") / filename
+    background_tasks.add_task(start_scan, source, outfile)
+    return {"file": filename, "source": source}
 
 
 if __name__ == "__main__":
