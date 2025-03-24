@@ -5,7 +5,7 @@ WORKDIR /app
 RUN apt update; apt install -y sane sane-utils
 RUN wget https://download.brother.com/welcome/dlf105200/brscan4-0.4.11-1.amd64.deb
 RUN dpkg -i --force-all brscan4-0.4.11-1.amd64.deb
-RUN --mount=type=bind,source=fix-pdf-permissions.sh,target=run.sh chmod u+x run.sh && ./run.sh
+RUN --mount=type=bind,source=fix-pdf-permissions.sh,target=run.sh bash run.sh
 
 # Enable bytecode compilation
 ENV UV_COMPILE_BYTECODE=1
