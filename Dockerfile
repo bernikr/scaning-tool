@@ -31,4 +31,4 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Reset the entrypoint, don't invoke `uv`
 ENTRYPOINT []
 
-CMD ["fastapi", "run", "app.py", "--proxy-headers", "--port", "80"]
+CMD ["fastapi", "run", "app.py", "--proxy-headers", "--port", "8000"]
