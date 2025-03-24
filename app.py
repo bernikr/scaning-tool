@@ -4,7 +4,8 @@ import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
-from typing import Any
+from pathlib import Path
+from typing import Any, Literal
 
 import uvicorn
 from fastapi import FastAPI
@@ -46,14 +47,31 @@ async def root() -> dict[str, str]:
 
 
 @app.get("/scan")
-async def scan() -> dict[str, str]:
+async def scan(
+    *,
+    source: Literal["flatbed", "adf-left", "adf"] = "adf",
+    double_sided: bool = False,
+    tags: list[str] | None = None,
+) -> dict[str, str]:
     filename = f"SCAN_{datetime.now(tz=UTC).strftime('%Y-%m-%d_%H-%M-%S')}.pdf"
-    logger.info("starting scan %s", filename)
+    if double_sided:
+        filename = "double-sided/" + filename
+    if tags:
+        filename = f"{'/'.join(tags)}/{filename}"
+    sources = {
+        "flatbed": "FlatBed",
+        "adf-left": "Automatic Document Feeder(left aligned)",
+        "adf": "Automatic Document Feeder(centrally aligned)",
+    }
+    logger.info("starting scan %s from source %s", filename, source)
+    outfile = Path("/scans") / filename
+    outfile.parent.mkdir(parents=True, exist_ok=True)
+    logger.info("outfile: %s", outfile)
     _, stderr = await run(
-        f"scanimage --format=pdf > /scans/{filename}",
+        f"scanimage --format=pdf --source='{sources[source]}' > {outfile.absolute()}",
     )
     logger.info("finished scan")
-    return {"file": filename, "stderr": stderr}
+    return {"file": filename, "source": source, "stderr": stderr}
 
 
 if __name__ == "__main__":
