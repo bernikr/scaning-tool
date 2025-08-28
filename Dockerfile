@@ -45,4 +45,4 @@ COPY --from=builder --chown=app:app /app /app
 ENV PATH="/app/bin:$PATH"
 
 EXPOSE 8000
-CMD ["uvicorn", "app:app", "--proxy-headers", "--port", "8000"]
+CMD ["uvicorn", "app:app", "--host=0.0.0.0", "--port=8000", "--proxy-headers"]
