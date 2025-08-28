@@ -1,35 +1,48 @@
-FROM ghcr.io/astral-sh/uv:debian
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim AS builder
+SHELL ["sh", "-exc"]
 
-WORKDIR /app
+ENV UV_COMPILE_BYTECODE=1 \ 
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=0 \
+    UV_PROJECT_ENVIRONMENT=/app
 
-RUN apt update; apt install -y sane sane-utils
-RUN wget https://download.brother.com/welcome/dlf105200/brscan4-0.4.11-1.amd64.deb
-RUN dpkg -i --force-all brscan4-0.4.11-1.amd64.deb
-RUN --mount=type=bind,source=fix-pdf-permissions.sh,target=run.sh bash run.sh
-
-# Enable bytecode compilation
-ENV UV_COMPILE_BYTECODE=1
-
-# Copy from the cache instead of linking since it's a mounted volume
-ENV UV_LINK_MODE=copy
-
-# Install the project's dependencies using the lockfile and settings
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=.python-version,target=.python-version \
+    uv venv /app
+
+RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --frozen --no-install-project --no-dev
+    uv sync --locked --no-install-project --no-dev
 
-# Then, add the rest of the project source code and install it
-# Installing separately from its dependencies allows optimal layer caching
-ADD app.py pyproject.toml uv.lock .python-version /app/
+COPY . /src
+WORKDIR /src
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev
+    uv sync --locked --no-dev --no-editable
 
-# Place executables in the environment at the front of the path
-ENV PATH="/app/.venv/bin:$PATH"
+FROM python:3.13-slim-bookworm
+SHELL ["sh", "-exc"]
 
-# Reset the entrypoint, don't invoke `uv`
-ENTRYPOINT []
+RUN <<EOF
+apt-get update -qy
+apt-get install -qy \
+    -o APT::Install-Recommends=false \
+    -o APT::Install-Suggests=false \
+    sane sane-utils wget imagemagick ca-certificates
 
-CMD ["fastapi", "run", "app.py", "--proxy-headers", "--port", "8000"]
+wget https://download.brother.com/welcome/dlf105200/brscan4-0.4.11-1.amd64.deb
+dpkg -i --force-all brscan4-0.4.11-1.amd64.deb
+rm brscan4-0.4.11-1.amd64.deb
+
+apt-get remove -qy wget
+apt-get clean
+rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+EOF
+
+RUN --mount=type=bind,source=fix-pdf-permissions.sh,target=run.sh bash run.sh
+
+COPY --from=builder --chown=app:app /app /app
+ENV PATH="/app/bin:$PATH"
+
+EXPOSE 8000
+CMD ["uvicorn", "app:app", "--proxy-headers", "--port", "8000"]
