@@ -23,21 +23,21 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 FROM python:3.13-slim-bookworm
 SHELL ["sh", "-exc"]
 
-RUN <<EOF
-apt-get update -qy
-apt-get install -qy \
+ADD --checksum=sha256:027b73648722ac8c8eb1a9c419d284a6562cc763feac9740a2b75a683b092972 \
+    https://download.brother.com/welcome/dlf105200/brscan4-0.4.11-1.amd64.deb ./brscan4.deb
+
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    <<EOT
+apt-get update -q
+apt-get install -qqy \
     -o APT::Install-Recommends=false \
     -o APT::Install-Suggests=false \
-    sane sane-utils wget imagemagick ca-certificates
+    sane sane-utils imagemagick
 
-wget https://download.brother.com/welcome/dlf105200/brscan4-0.4.11-1.amd64.deb
-dpkg -i --force-all brscan4-0.4.11-1.amd64.deb
-rm brscan4-0.4.11-1.amd64.deb
-
-apt-get remove -qy wget
-apt-get clean
-rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-EOF
+dpkg -i --force-all brscan4.deb
+rm brscan4.deb
+EOT
 
 RUN --mount=type=bind,source=fix-pdf-permissions.sh,target=run.sh bash run.sh
 
