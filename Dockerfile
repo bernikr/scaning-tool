@@ -44,5 +44,7 @@ RUN --mount=type=bind,source=fix-pdf-permissions.sh,target=run.sh bash run.sh
 COPY --from=builder --chown=app:app /app /app
 ENV PATH="/app/bin:$PATH"
 
+ARG VERSION
+ENV VERSION=${VERSION:-"unspecified (docker)"}
 EXPOSE 8000
 CMD ["uvicorn", "app:app", "--host=0.0.0.0", "--port=8000", "--proxy-headers"]

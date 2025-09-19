@@ -30,7 +30,7 @@ async def run(cmd: str) -> tuple[str, str]:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:  # noqa: ARG001
-    logger.info("Scanning Tool Version %s", os.getenv("VERSION", "dev"))
+    logger.info("Scanning Tool Version %s", os.getenv("VERSION", "unspecified (dev)"))
     logger.info("removing scanner")
     _, _ = await run("brsaneconfig4 -r scanner")
     logger.info("adding scanner")
