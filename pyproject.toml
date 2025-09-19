@@ -5,14 +5,15 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "fastapi>=0.116.1",
+    "fastapi>=0.116.2",
     "uvicorn>=0.35.0",
 ]
 
 [dependency-groups]
 dev = [
-    "mypy>=1.17.1",
-    "ruff>=0.12.11",
+    "mypy>=1.18.2",
+    "pre-commit>=4.3.0",
+    "ruff>=0.13.1",
 ]
 
 [tool.uv]
@@ -31,3 +32,6 @@ ignore = [
 
 [tool.mypy]
 strict = true
+allow_redefinition = true
+allow_redefinition_new = true
+local_partial_types = true
