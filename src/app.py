@@ -52,9 +52,9 @@ async def start_scan(outfile: Path) -> None:
     logger.info("starting scan")
     await outfile.parent.mkdir(parents=True, exist_ok=True)
     with TemporaryDirectory(ignore_cleanup_errors=True) as directory:
-        d = Path(directory)
+        d = await Path(directory).absolute()
         stdout, stderr = await run(
-            f"cd {d.absolute()} && "
+            f"cd {d.as_posix()} && "
             f"scanimage --format=tiff --batch='scan.page-%03d.tiff' -l 0 -t 0 -x 210 -y 297 && "
             "convert *.tiff -page A4 +density -compress lzw scan.pdf",
         )
