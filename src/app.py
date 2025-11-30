@@ -55,7 +55,7 @@ async def start_scan(outfile: Path) -> None:
         d = Path(directory)
         stdout, stderr = await run(
             f"cd {d.absolute()} && "
-            f"scanimage --format=tiff --batch='scan.page-%03d.tiff' -x 210 -y 297 && "
+            f"scanimage --format=tiff --batch='scan.page-%03d.tiff' -l 0 -t 0 -x 210 -y 297 && "
             "convert *.tiff scan.pdf",
         )
         if stdout:
