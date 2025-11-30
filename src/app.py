@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, Literal
+from typing import Any
 
 import uvicorn
 from fastapi import BackgroundTasks, FastAPI
@@ -48,19 +48,14 @@ async def root() -> dict[str, str]:
     return {"message": "Hello World"}
 
 
-async def start_scan(source: Literal["flatbed", "adf-left", "adf"], outfile: Path) -> None:
-    sources = {
-        "flatbed": "FlatBed",
-        "adf-left": "Automatic Document Feeder(left aligned)",
-        "adf": "Automatic Document Feeder(centrally aligned)",
-    }
-    logger.info("starting scan from source %s", source)
+async def start_scan(outfile: Path) -> None:
+    logger.info("starting scan")
     outfile.parent.mkdir(parents=True, exist_ok=True)
     with TemporaryDirectory(ignore_cleanup_errors=True) as directory:
         d = Path(directory)
         stdout, stderr = await run(
             f"cd {d.absolute()} && "
-            f"scanimage --format=tiff --source='{sources[source]}' --batch='scan.page-%03d.tiff' -x 210 -y 297 && "
+            f"scanimage --format=tiff --batch='scan.page-%03d.tiff' -x 210 -y 297 && "
             "convert *.tiff scan.pdf",
         )
         if stdout:
@@ -76,7 +71,6 @@ async def start_scan(source: Literal["flatbed", "adf-left", "adf"], outfile: Pat
 @app.get("/scan")
 async def scan(
     *,
-    source: Literal["flatbed", "adf-left", "adf"] = "adf",
     double_sided: bool = False,
     tags: list[str] | None = None,
     background_tasks: BackgroundTasks,
@@ -87,8 +81,8 @@ async def scan(
     if tags:
         filename = f"{'/'.join(tags)}/{filename}"
     outfile = Path("/scans") / filename
-    background_tasks.add_task(start_scan, source, outfile)
-    return {"file": filename, "source": source}
+    background_tasks.add_task(start_scan, outfile)
+    return {"file": filename}
 
 
 if __name__ == "__main__":
