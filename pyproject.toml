@@ -5,15 +5,15 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "fastapi>=0.116.2",
-    "uvicorn>=0.35.0",
+    "fastapi>=0.123.0",
+    "uvicorn>=0.38.0",
 ]
 
 [dependency-groups]
 dev = [
-    "mypy>=1.18.2",
-    "pre-commit>=4.3.0",
-    "ruff>=0.13.1",
+    "mypy>=1.19.0",
+    "pre-commit>=4.5.0",
+    "ruff>=0.14.7",
 ]
 
 [tool.uv]
