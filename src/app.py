@@ -4,11 +4,11 @@ import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
-from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
 
 import uvicorn
+from anyio import Path
 from fastapi import BackgroundTasks, FastAPI
 
 logger = logging.getLogger("uvicorn.error")
@@ -50,7 +50,7 @@ async def root() -> dict[str, str]:
 
 async def start_scan(outfile: Path) -> None:
     logger.info("starting scan")
-    outfile.parent.mkdir(parents=True, exist_ok=True)
+    await outfile.parent.mkdir(parents=True, exist_ok=True)
     with TemporaryDirectory(ignore_cleanup_errors=True) as directory:
         d = Path(directory)
         stdout, stderr = await run(
@@ -62,9 +62,9 @@ async def start_scan(outfile: Path) -> None:
             logger.info("stdout:\n%s", stdout)
         if stderr:
             logger.info("stderr:\n%s", stderr)
-        logger.info(", ".join(f.name for f in d.glob("*")))
+        logger.info(", ".join([f.name async for f in d.glob("*")]))
         logger.info("finished scan")
-        outfile.write_bytes((d / "scan.pdf").read_bytes())
+        await outfile.write_bytes(await (d / "scan.pdf").read_bytes())
         logger.info("copied scan to %s", outfile)
 
 
