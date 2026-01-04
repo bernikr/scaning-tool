@@ -24,11 +24,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 FROM python:3.13-slim-bookworm
 SHELL ["sh", "-exc"]
 
-ADD --checksum=sha256:027b73648722ac8c8eb1a9c419d284a6562cc763feac9740a2b75a683b092972 \
-    https://download.brother.com/welcome/dlf105200/brscan4-0.4.11-1.amd64.deb ./brscan4.deb
-
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    --mount=type=bind,source=fix-pdf-permissions.sh,target=fix-pdf-permissions.sh \
     <<EOT
 apt-get update -q
 apt-get install -qqy \
@@ -36,11 +34,13 @@ apt-get install -qqy \
     -o APT::Install-Suggests=false \
     sane sane-utils imagemagick wget
 
+wget -O brscan4.deb https://download.brother.com/welcome/dlf105200/brscan4-0.4.11-1.amd64.deb
+echo "027b73648722ac8c8eb1a9c419d284a6562cc763feac9740a2b75a683b092972  brscan4.deb" | sha256sum -c -
 dpkg -i --force-all brscan4.deb
 rm brscan4.deb
-EOT
 
-RUN --mount=type=bind,source=fix-pdf-permissions.sh,target=run.sh bash run.sh
+bash fix-pdf-permissions.sh
+EOT
 
 COPY --from=env-builder --chown=app:app /app /app
 COPY --from=app-builder --chown=app:app /app /app
