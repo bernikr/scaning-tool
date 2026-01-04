@@ -9,7 +9,7 @@ from typing import Any
 
 import uvicorn
 from anyio import Path
-from fastapi import BackgroundTasks, FastAPI
+from fastapi import BackgroundTasks, FastAPI, Response
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -43,9 +43,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:  # noqa: ARG001
 app = FastAPI(lifespan=lifespan)
 
 
-@app.get("/")
-async def root() -> dict[str, str]:
-    return {"message": "Hello World"}
+@app.get("/hc")
+def healthcheck() -> Response:
+    return Response("OK", media_type="text/plain")
 
 
 async def start_scan(outfile: Path) -> None:

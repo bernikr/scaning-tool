@@ -49,4 +49,5 @@ ENV PATH="/app/bin:$PATH"
 ARG VERSION
 ENV VERSION=${VERSION:-"unspecified (docker)"}
 EXPOSE 8000
+HEALTHCHECK --start-period=30s CMD [ "$( wget -qO - http://127.0.0.1:8000/hc )" = OK ]
 CMD ["uvicorn", "app:app", "--host=0.0.0.0", "--port=8000", "--proxy-headers"]
