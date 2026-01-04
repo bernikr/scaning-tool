@@ -34,7 +34,7 @@ apt-get update -q
 apt-get install -qqy \
     -o APT::Install-Recommends=false \
     -o APT::Install-Suggests=false \
-    sane sane-utils imagemagick
+    sane sane-utils imagemagick wget
 
 dpkg -i --force-all brscan4.deb
 rm brscan4.deb
