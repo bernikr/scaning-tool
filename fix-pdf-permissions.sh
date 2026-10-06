@@ -1,4 +1,9 @@
 #!/bin/bash
+
+# SPDX-FileCopyrightText: 2026 bernikr <hi@berni.kr>
+#
+# SPDX-License-Identifier: MIT
+
 # https://github.com/pohape/command-line-scanner/blob/main/fix-pdf-permissions.sh
 
 if [ "$EUID" -ne 0 ]
