@@ -29,7 +29,7 @@ async def run(cmd: str) -> tuple[str, str]:
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:  # noqa: ARG001
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:  # ruff: ignore[unused-function-argument]
     logger.info("Scanning Tool Version %s", os.getenv("VERSION", "unspecified (dev)"))
     logger.info("removing scanner")
     _, _ = await run("brsaneconfig4 -r scanner")
@@ -86,4 +86,4 @@ async def scan(
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)  # noqa: S104
+    uvicorn.run(app, host="0.0.0.0", port=8000)  # ruff: ignore[hardcoded-bind-all-interfaces]
