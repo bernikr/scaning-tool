@@ -21,7 +21,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=.,target=/src,rw  \
     uv sync --locked --no-editable --directory /src
 
-FROM debian:trixie-slim
+FROM debian:trixie-slim AS runtime
 SHELL ["sh", "-exc"]
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -40,6 +40,10 @@ dpkg -i --force-all brscan4.deb
 rm brscan4.deb
 
 apt-get purge -qy wget && apt-get autoremove -qy
+
+# Allow non-root users to configure and run the Brother scanner driver
+mkdir -p /etc/opt/brother/scanner/brscan4
+chmod -R a+rwX /etc/opt/brother /opt/brother
 
 bash fix-pdf-permissions.sh
 
