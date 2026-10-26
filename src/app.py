@@ -5,11 +5,11 @@
 import asyncio
 import logging
 import os
-from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from tempfile import TemporaryDirectory
 from typing import Any
+lazy from collections.abc import AsyncGenerator
 
 import uvicorn
 from anyio import Path
