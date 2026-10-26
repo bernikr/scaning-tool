@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim AS env-builder
+FROM ghcr.io/astral-sh/uv:python3.15-bookworm-slim AS env-builder
 SHELL ["sh", "-exc"]
 
 ENV UV_COMPILE_BYTECODE=1 \
@@ -25,7 +25,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=.,target=/src,rw  \
     uv sync --locked --no-dev --no-editable --directory /src
 
-FROM python:3.13-slim-bookworm
+FROM python:3.15-slim-bookworm
 SHELL ["sh", "-exc"]
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
