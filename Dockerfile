@@ -32,7 +32,7 @@ apt-get update -q
 apt-get install -qqy \
     -o APT::Install-Recommends=false \
     -o APT::Install-Suggests=false \
-    ca-certificates sane-utils imagemagick sane-airscan
+    ca-certificates sane-utils imagemagick
 
 bash fix-pdf-permissions.sh
 

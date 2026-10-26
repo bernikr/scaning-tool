@@ -52,7 +52,7 @@ async def start_scan(outfile: Path) -> None:
         d = await Path(directory).absolute()
         stdout, stderr = await run(
             f"cd {d.as_posix()} && "
-            f"scanimage -d 'airscan:eSCL:scanner:http://{SCANNER_IP}:80/eSCL/' "
+            f"scanimage -d 'escl:http://{SCANNER_IP}:80' "
             "--format=tiff --batch='scan.page-%03d.tiff' -l 0 -t 0 -x 210 -y 297 && "
             "convert *.tiff -page A4 +density -compress lzw scan.pdf",
         )
