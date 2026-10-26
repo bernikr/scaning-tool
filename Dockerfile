@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-FROM ghcr.io/astral-sh/uv:bookworm-slim AS builder
+FROM ghcr.io/astral-sh/uv:trixie-slim AS builder
 SHELL ["sh", "-exc"]
 
 ENV UV_COMPILE_BYTECODE=1 \
@@ -10,18 +10,18 @@ ENV UV_COMPILE_BYTECODE=1 \
     UV_NO_DEV=1 \
     UV_PYTHON_PREFERENCE=only-managed \
     UV_PYTHON_INSTALL_DIR=/python \
-    UV_PROJECT_ENVIRONMENT=/venv
+    UV_PROJECT_ENVIRONMENT=/venv \
+    UV_PREVIEW_FEATURES=frozen-lockfile
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --locked --no-install-project --no-dev
+    uv sync --frozen --no-install-project
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=.,target=/src,rw  \
-    uv sync --locked --no-dev --no-editable --directory /src
+    uv sync --locked --no-editable --directory /src
 
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 SHELL ["sh", "-exc"]
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -39,10 +39,12 @@ echo "027b73648722ac8c8eb1a9c419d284a6562cc763feac9740a2b75a683b092972  brscan4.
 dpkg -i --force-all brscan4.deb
 rm brscan4.deb
 
-bash fix-pdf-permissions.sh
-EOT
+apt-get purge -qy wget && apt-get autoremove -qy
 
-#TODO: run as nonroot
+bash fix-pdf-permissions.sh
+
+useradd -u 10001 -G scanner,lp appuser
+EOT
 
 COPY --from=builder /python /python
 COPY --from=builder /venv /venv
@@ -51,6 +53,8 @@ ENV PATH="/venv/bin:$PATH" \
 
 ARG VERSION
 ENV VERSION=${VERSION:-"unspecified (docker)"}
+
+USER appuser
 EXPOSE 8000
-HEALTHCHECK --start-period=30s CMD test "$(wget -qO- -T 3 http://127.0.0.1:8000/hc)" = "OK"
+HEALTHCHECK --start-period=30s CMD ["python", "-c", "import urllib.request; exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/hc').read() == b'OK' else 1)"]
 CMD ["uvicorn", "app:app", "--host=0.0.0.0", "--port=8000", "--proxy-headers"]
