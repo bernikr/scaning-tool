@@ -36,16 +36,6 @@ async def run(cmd: str) -> tuple[str, str]:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:  # ruff: ignore[unused-function-argument]
     logger.info("Scanning Tool Version %s", os.getenv("VERSION", "unspecified (dev)"))
-
-    airscan_conf = f'[devices]\n"scanner" = http://{SCANNER_IP}:80/eSCL/\n'
-
-    await Path("/etc/sane.d/airscan.conf").write_text(airscan_conf)
-
-    # Verify discovery
-    out, err = await run("scanimage -L")
-    logger.info("Configured device:\n%s", out.strip())
-    if err:
-        logger.error(err)
     yield
 
 
@@ -90,7 +80,7 @@ async def start_scan(outfile: Path) -> None:
         d = await Path(directory).absolute()
         stdout, stderr = await run(
             f"cd {d.as_posix()} && "
-            f"scanimage -d 'airscan:e0:scanner' --source '{source}' "
+            f"scanimage -d 'escl:http://{SCANNER_IP}:80' --source '{source}' "
             "--format=tiff --batch='scan.page-%03d.tiff' -l 0 -t 0 -x 210 -y 297 && "
             "convert *.tiff -page A4 +density -compress lzw scan.pdf",
         )

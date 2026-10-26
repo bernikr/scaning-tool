@@ -32,12 +32,7 @@ apt-get update -q
 apt-get install -qqy \
     -o APT::Install-Recommends=false \
     -o APT::Install-Suggests=false \
-    ca-certificates sane-utils imagemagick sane-airscan
-
-# Allow appuser to write /etc/sane.d/airscan.conf dynamically
-mkdir -p /etc/sane.d
-touch /etc/sane.d/airscan.conf
-chmod -R a+rwX /etc/sane.d
+    ca-certificates sane-utils imagemagick
 
 bash fix-pdf-permissions.sh
 
