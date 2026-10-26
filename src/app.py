@@ -9,7 +9,7 @@ import xml.etree.ElementTree as ET  # ruff: ignore[suspicious-xml-etree-import]
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from tempfile import TemporaryDirectory
-from typing import Any
+from typing import Any, Literal
 lazy from collections.abc import AsyncGenerator
 
 import httpx
@@ -47,7 +47,7 @@ def healthcheck() -> Response:
     return Response("OK", media_type="text/plain")
 
 
-async def detect_scan_source() -> str:
+async def detect_scan_source() -> Literal["Flatbed", "ADF"]:
     try:  # ruff: ignore[too-many-statements-in-try-clause]
         url = f"http://{SCANNER_IP}:80/eSCL/ScannerStatus"
         async with httpx.AsyncClient(timeout=3.0) as client:
@@ -75,12 +75,13 @@ async def start_scan(outfile: Path) -> None:
 
     source = await detect_scan_source()
     logger.info("Detected scan source: %s", source)
+    batch_count_arg = "--batch-count=1" if source == "Flatbed" else ""
 
     with TemporaryDirectory(ignore_cleanup_errors=True) as directory:
         d = await Path(directory).absolute()
         stdout, stderr = await run(
             f"cd {d.as_posix()} && "
-            f"scanimage -d 'escl:http://{SCANNER_IP}:80' --source '{source}' "
+            f"scanimage -d 'escl:http://{SCANNER_IP}:80' --source '{source}' {batch_count_arg} "
             "--format=tiff --batch='scan.page-%03d.tiff' -l 0 -t 0 -x 210 -y 297 && "
             "convert *.tiff -page A4 +density -compress lzw scan.pdf",
         )
