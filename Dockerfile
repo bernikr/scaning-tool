@@ -2,30 +2,26 @@
 #
 # SPDX-License-Identifier: MIT
 
-FROM ghcr.io/astral-sh/uv:python3.15-bookworm-slim AS env-builder
+FROM ghcr.io/astral-sh/uv:bookworm-slim AS builder
 SHELL ["sh", "-exc"]
 
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
-    UV_PYTHON_DOWNLOADS=0 \
-    UV_PROJECT_ENVIRONMENT=/app
-
-RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv venv /app
+    UV_NO_DEV=1 \
+    UV_PYTHON_PREFERENCE=only-managed \
+    UV_PYTHON_INSTALL_DIR=/python \
+    UV_PROJECT_ENVIRONMENT=/venv
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --locked --no-install-project --no-dev
 
-FROM env-builder AS app-builder
-
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=.,target=/src,rw  \
     uv sync --locked --no-dev --no-editable --directory /src
 
-FROM python:3.15-slim-bookworm
+FROM debian:bookworm-slim
 SHELL ["sh", "-exc"]
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -46,12 +42,13 @@ rm brscan4.deb
 bash fix-pdf-permissions.sh
 EOT
 
-COPY --from=env-builder --chown=app:app /app /app
-COPY --from=app-builder --chown=app:app /app /app
-ENV PATH="/app/bin:$PATH"
+COPY --from=builder /python /python
+COPY --from=builder /venv /venv
+ENV PATH="/venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1
 
 ARG VERSION
 ENV VERSION=${VERSION:-"unspecified (docker)"}
 EXPOSE 8000
-HEALTHCHECK --start-period=30s CMD [ "$( wget -qO - http://127.0.0.1:8000/hc )" = OK ]
+HEALTHCHECK --start-period=30s CMD test "$(wget -qO- -T 3 http://127.0.0.1:8000/hc)" = "OK"
 CMD ["uvicorn", "app:app", "--host=0.0.0.0", "--port=8000", "--proxy-headers"]
