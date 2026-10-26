@@ -32,7 +32,7 @@ apt-get update -q
 apt-get install -qqy \
     -o APT::Install-Recommends=false \
     -o APT::Install-Suggests=false \
-    ca-certificates sane sane-utils imagemagick wget
+    ca-certificates sane-utils imagemagick wget
 
 wget -O brscan4.deb https://download.brother.com/welcome/dlf105200/brscan4-0.4.11-1.amd64.deb
 echo "027b73648722ac8c8eb1a9c419d284a6562cc763feac9740a2b75a683b092972  brscan4.deb" | sha256sum -c -
