@@ -36,10 +36,16 @@ async def run(cmd: str) -> tuple[str, str]:
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:  # ruff: ignore[unused-function-argument]
     logger.info("Scanning Tool Version %s", os.getenv("VERSION", "unspecified (dev)"))
     logger.info("removing scanner")
-    _, _ = await run("brsaneconfig4 -r scanner")
+    _, err = await run("brsaneconfig4 -r scanner")
+    if err:
+        logger.error(err)
     logger.info("adding scanner")
-    _, _ = await run(f"brsaneconfig4 -a name=scanner model={SCANNER_MODEL_NAME} ip={SCANNER_IP}")
-    out, _ = await run("brsaneconfig4 -q")
+    _, err = await run(f"brsaneconfig4 -a name=scanner model={SCANNER_MODEL_NAME} ip={SCANNER_IP}")
+    if err:
+        logger.error(err)
+    out, err = await run("brsaneconfig4 -q")
+    if err:
+        logger.error(err)
     logger.info(out)
     yield
 
