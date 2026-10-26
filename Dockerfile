@@ -32,18 +32,7 @@ apt-get update -q
 apt-get install -qqy \
     -o APT::Install-Recommends=false \
     -o APT::Install-Suggests=false \
-    ca-certificates sane-utils imagemagick wget libusb-0.1-4
-
-wget -O brscan4.deb https://download.brother.com/welcome/dlf105200/brscan4-0.4.11-1.amd64.deb
-echo "027b73648722ac8c8eb1a9c419d284a6562cc763feac9740a2b75a683b092972  brscan4.deb" | sha256sum -c -
-dpkg -i --force-all brscan4.deb
-rm brscan4.deb
-
-apt-get purge -qy wget && apt-get autoremove -qy
-
-# Allow non-root users to configure and run the Brother scanner driver
-mkdir -p /etc/opt/brother/scanner/brscan4
-chmod -R a+rwX /etc/opt/brother /opt/brother
+    ca-certificates sane-utils imagemagick sane-airscan
 
 bash fix-pdf-permissions.sh
 

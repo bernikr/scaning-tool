@@ -17,7 +17,6 @@ from fastapi import BackgroundTasks, FastAPI, Response
 
 logger = logging.getLogger("uvicorn.error")
 
-SCANNER_MODEL_NAME = os.getenv("SCANNER_MODEL_NAME")
 SCANNER_IP = os.getenv("SCANNER_IP")
 
 
@@ -35,18 +34,6 @@ async def run(cmd: str) -> tuple[str, str]:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:  # ruff: ignore[unused-function-argument]
     logger.info("Scanning Tool Version %s", os.getenv("VERSION", "unspecified (dev)"))
-    logger.info("removing scanner")
-    _, err = await run("brsaneconfig4 -r scanner")
-    if err:
-        logger.error(err)
-    logger.info("adding scanner")
-    _, err = await run(f"brsaneconfig4 -a name=scanner model={SCANNER_MODEL_NAME} ip={SCANNER_IP}")
-    if err:
-        logger.error(err)
-    out, err = await run("brsaneconfig4 -q")
-    if err:
-        logger.error(err)
-    logger.info(out)
     yield
 
 
@@ -65,7 +52,8 @@ async def start_scan(outfile: Path) -> None:
         d = await Path(directory).absolute()
         stdout, stderr = await run(
             f"cd {d.as_posix()} && "
-            f"scanimage --format=tiff --batch='scan.page-%03d.tiff' -l 0 -t 0 -x 210 -y 297 && "
+            f"scanimage -d 'airscan:eSCL:scanner:http://{SCANNER_IP}:80/eSCL/' "
+            "--format=tiff --batch='scan.page-%03d.tiff' -l 0 -t 0 -x 210 -y 297 && "
             "convert *.tiff -page A4 +density -compress lzw scan.pdf",
         )
         if stdout:
