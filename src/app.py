@@ -5,12 +5,14 @@
 import asyncio
 import logging
 import os
+import xml.etree.ElementTree as ET  # ruff: ignore[suspicious-xml-etree-import]
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from tempfile import TemporaryDirectory
 from typing import Any
 lazy from collections.abc import AsyncGenerator
 
+import httpx
 import uvicorn
 from anyio import Path
 from fastapi import BackgroundTasks, FastAPI, Response
@@ -34,6 +36,16 @@ async def run(cmd: str) -> tuple[str, str]:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:  # ruff: ignore[unused-function-argument]
     logger.info("Scanning Tool Version %s", os.getenv("VERSION", "unspecified (dev)"))
+
+    airscan_conf = f'[devices]\n"scanner" = http://{SCANNER_IP}:80/eSCL/\n'
+
+    await Path("/etc/sane.d/airscan.conf").write_text(airscan_conf)
+
+    # Verify discovery
+    out, err = await run("scanimage -L")
+    logger.info("Configured device:\n%s", out.strip())
+    if err:
+        logger.error(err)
     yield
 
 
@@ -45,14 +57,40 @@ def healthcheck() -> Response:
     return Response("OK", media_type="text/plain")
 
 
+async def detect_scan_source() -> str:
+    try:  # ruff: ignore[too-many-statements-in-try-clause]
+        url = f"http://{SCANNER_IP}:80/eSCL/ScannerStatus"
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            resp = await client.get(url)
+            resp.raise_for_status()
+
+            root = ET.fromstring(resp.content)  # ruff: ignore[suspicious-xml-element-tree-usage]
+            adf_state = None
+            for elem in root.iter():
+                if elem.tag.endswith("AdfState"):
+                    adf_state = elem.text
+                    break
+
+            if adf_state == "ScannerAdfLoaded":
+                return "ADF"
+    except Exception as e:  # ruff: ignore[blind-except]
+        logger.warning("Could not read ADF sensor status: %s. Defaulting to Flatbed.", e)
+
+    return "Flatbed"
+
+
 async def start_scan(outfile: Path) -> None:
     logger.info("starting scan")
     await outfile.parent.mkdir(parents=True, exist_ok=True)
+
+    source = await detect_scan_source()
+    logger.info("Detected scan source: %s", source)
+
     with TemporaryDirectory(ignore_cleanup_errors=True) as directory:
         d = await Path(directory).absolute()
         stdout, stderr = await run(
             f"cd {d.as_posix()} && "
-            f"scanimage -d 'escl:http://{SCANNER_IP}:80' "
+            f"scanimage -d 'airscan:e0:scanner' --source '{source}' "
             "--format=tiff --batch='scan.page-%03d.tiff' -l 0 -t 0 -x 210 -y 297 && "
             "convert *.tiff -page A4 +density -compress lzw scan.pdf",
         )
