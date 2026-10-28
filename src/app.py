@@ -5,7 +5,6 @@
 import asyncio
 import logging
 import os
-import xml.etree.ElementTree as ET  # ruff: ignore[suspicious-xml-etree-import]
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from tempfile import TemporaryDirectory
@@ -15,6 +14,7 @@ lazy from collections.abc import AsyncGenerator
 import httpx
 import uvicorn
 from anyio import Path
+from defusedxml import ElementTree
 from fastapi import BackgroundTasks, FastAPI, Response
 
 logger = logging.getLogger("uvicorn.error")
@@ -54,7 +54,7 @@ async def detect_scan_source() -> Literal["Flatbed", "ADF"]:
             resp = await client.get(url)
             resp.raise_for_status()
 
-            root = ET.fromstring(resp.content)  # ruff: ignore[suspicious-xml-element-tree-usage]
+            root = ElementTree.fromstring(resp.content)
             adf_state = None
             for elem in root.iter():
                 if elem.tag.endswith("AdfState"):

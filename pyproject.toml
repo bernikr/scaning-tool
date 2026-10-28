@@ -9,6 +9,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = "==3.15.*"
 dependencies = [
+  "defusedxml>=0.7.1",
   "fastapi>=0.162.0",
   "httpx>=0.28.1",
   "uvicorn>=0.54.0",
@@ -19,6 +20,7 @@ dev = [
   "mypy>=2.4.0",
   "prek>=0.5.7",
   "ruff>=0.17.2",
+  "types-defusedxml>=0.7.0.20260504",
 ]
 
 [tool.uv]
