@@ -82,9 +82,8 @@ async def start_scan(outfile: Path) -> None:
         stdout, stderr = await run(
             f"cd {d.as_posix()} && "
             f"scanimage -d 'escl:http://{SCANNER_IP}:80' --source '{source}' {batch_count_arg} "
-            "--mode Color --resolution 300 "
-            "--format=tiff --batch='scan.page-%03d.tiff' -l 0 -t 0 -x 210 -y 297 && "
-            "convert *.tiff -page A4 -compress jpeg -quality 95 scan.pdf",
+            "--mode Color --resolution 300 -l 0 -t 0 -x 210 -y 297 --format=tiff --batch='scan.page-%03d.tiff' && "
+            "convert *.tiff -background white -gravity center -extent 2480x3508 -compress jpeg -quality 95 scan.pdf",
         )
         if stdout:
             logger.info("stdout:\n%s", stdout)
